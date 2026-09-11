@@ -69,7 +69,7 @@ export default function CustomerCare() {
   const contactMethods = [
     { icon: '💬', title: 'Live Chat', desc: 'Usually replies in 5 mins', action: 'Start Chat' },
     { icon: '📞', title: 'Phone Support', desc: '+1 (800) 123-4567', action: 'Call Now' },
-    { icon: '✉️', title: 'Email Us', desc: 'support@physiobuddy.com', action: 'Send Email' },
+    { icon: '✉️', title: 'Email Us', desc: 'support@rehabai.com', action: 'Send Email' },
   ];
 
   // Shared input styling for the compact look
