@@ -107,7 +107,7 @@ export default function DoctorHome() {
       </main>
 
       <footer className="bg-white/40 dark:bg-gray-950 py-10 mt-10 border-t border-white/30 dark:border-gray-800 text-center">
-        <p className="text-cyan-600 uppercase text-xs font-bold tracking-widest">PhysioBuddy · Doctor Portal</p>
+        <p className="text-cyan-600 uppercase text-xs font-bold tracking-widest">Rehab AI · Doctor Portal</p>
       </footer>
     </div>
   );
