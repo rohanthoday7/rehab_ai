@@ -44,7 +44,7 @@ const DashboardMockup = () => (
                 <span className="w-3 h-3 rounded-full bg-emerald-500" />
             </div>
             <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
-                PhysioBuddy Dashboard
+                Rehab AI Dashboard
             </div>
         </div>
 
@@ -142,17 +142,17 @@ export default function Landingpage() {
                         {/* Logo */}
                         {/* Logo */}
                     <div className="flex-shrink-0">
-                        <a href="/" aria-label="PhysioBuddy Home" className="flex items-center">
+                        <a href="/" aria-label="Rehab AI Home" className="flex items-center">
                             {/* Light Mode Logo */}
                             <img
                                 src={pb}
-                                alt="PhysioBuddy Logo"
+                                alt="Rehab AI Logo"
                                 className="h-14 md:h-14 transition duration-500 dark:hidden" 
                             />
                             {/* Dark Mode Logo */}
                             <img
                                 src={pb}
-                                alt="PhysioBuddy Logo (Dark Mode)"
+                                alt="Rehab AI Logo (Dark Mode)"
                                 className="h-14 md:h-14 transition duration-500 hidden dark:block"
                             />
                         </a>
@@ -330,7 +330,7 @@ export default function Landingpage() {
                                     </div>
                                     <h3 className="mt-8 text-2xl font-extrabold text-cyan-900 dark:text-cyan-400">Daily Exercise</h3>
                                     <p className="mt-4 text-gray-600 dark:text-gray-400">
-                                        Log in to PhysioBuddy to view your custom routines with video guidance.
+                                        Log in to Rehab AI to view your custom routines with video guidance.
                                     </p>
                                 </div>
 
@@ -363,7 +363,7 @@ export default function Landingpage() {
                             {/* Testimonial 1 */}
                             <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                                 <blockquote className="text-xl italic font-medium text-gray-800 dark:text-gray-200">
-                                    "PhysioBuddy turned my recovery around. The videos were crystal clear, and being able to chat with my therapist instantly made all the difference. I recovered weeks faster than expected!"
+                                    "Rehab AI turned my recovery around. The videos were crystal clear, and being able to chat with my therapist instantly made all the difference. I recovered weeks faster than expected!"
                                 </blockquote>
                                 <div className="mt-6 font-semibold text-cyan-700 dark:text-cyan-500">
                                     — Sarah J., Knee Replacement Patient
@@ -373,7 +373,7 @@ export default function Landingpage() {
                             {/* Testimonial 2 */}
                             <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                                 <blockquote className="text-xl italic font-medium text-gray-800 dark:text-gray-200">
-                                    "As a busy professional, I needed flexibility. PhysioBuddy allowed me to do my exercises on my schedule, but with all the professional guidance I would get in the clinic."
+                                    "As a busy professional, I needed flexibility. Rehab AI allowed me to do my exercises on my schedule, but with all the professional guidance I would get in the clinic."
                                 </blockquote>
                                 <div className="mt-6 font-semibold text-cyan-700 dark:text-cyan-500">
                                     — Alex K., Chronic Back Pain
@@ -393,7 +393,7 @@ export default function Landingpage() {
                                     Empowering Your Recovery Journey
                                 </h2>
                                 <p className="mt-6 text-xl opacity-90 leading-relaxed">
-                                    PhysioBuddy was founded by a dedicated team of physical therapists and software engineers committed to closing the gap between clinic and home. We believe consistent, guided movement is the key to lasting recovery.
+                                    Rehab AI was founded by a dedicated team of physical therapists and software engineers committed to closing the gap between clinic and home. We believe consistent, guided movement is the key to lasting recovery.
                                 </p>
                                 <p className="mt-4 text-lg opacity-80 italic">
                                     "Bringing the clinic experience directly to your daily life."
@@ -463,7 +463,7 @@ export default function Landingpage() {
                         <div className="flex flex-col sm:flex-row justify-center gap-6 text-sm font-bold text-cyan-800 dark:text-cyan-400">
                             <span>📞 +1 (800) 123-4567</span>
                             <span className="hidden sm:inline">|</span>
-                            <span>✉️ support@physiobuddy.com</span>
+                            <span>✉️ support@Rehab AI.com</span>
                             <span className="hidden sm:inline">|</span>
                             <span>📍 Mumbai, India</span>
                         </div>
@@ -476,7 +476,7 @@ export default function Landingpage() {
                         Ready to take control of your health?
                     </h2>
                     <p className="mt-4 text-xl text-gray-600 dark:text-gray-300 transition-colors duration-500">
-                        Join hundreds of patients finding better results with PhysioBuddy.
+                        Join hundreds of patients finding better results with Rehab AI.
                     </p>
                     <button
                         onClick={() => handleNavigation('/login')}
@@ -490,7 +490,7 @@ export default function Landingpage() {
             {/* 8. Footer */}
             <footer className="bg-gray-800 dark:bg-gray-950 text-white py-10 transition-colors duration-500">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
-                    <p>&copy; {new Date().getFullYear()} PhysioBuddy. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Rehab AI. All rights reserved.</p>
                     <div className="mt-4 space-x-4">
                         <a href="#" className="hover:text-cyan-400 transition">Privacy Policy</a>
                         <a href="#" className="hover:text-cyan-400 transition">Terms of Service</a>
