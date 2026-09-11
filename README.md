@@ -1,6 +1,6 @@
-# 🩺 PhysioBuddy
+# 🩺 Rehab AI
 
-PhysioBuddy is a full-stack physiotherapy platform that connects doctors and patients, letting doctors assign exercise routines and letting patients perform them at home with **real-time, AI-powered pose tracking**. Using MediaPipe pose landmarks streamed over WebSockets, the app automatically counts reps, checks form/alignment, and gives live feedback — no manual logging required.
+Rehab AI is a full-stack physiotherapy platform that connects doctors and patients, letting doctors assign exercise routines and letting patients perform them at home with **real-time, AI-powered pose tracking**. Using MediaPipe pose landmarks streamed over WebSockets, the app automatically counts reps, checks form/alignment, and gives live feedback — no manual logging required.
 
 ---
 
@@ -43,7 +43,7 @@ PhysioBuddy is a full-stack physiotherapy platform that connects doctors and pat
 ## 📁 Project Structure
 
 ```
-PhysioBuddy/
+rehab_ai/
 ├── backend/
 │   ├── manage.py
 │   ├── requirements.txt
