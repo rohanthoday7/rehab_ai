@@ -99,7 +99,7 @@ const handleSubmit = async (e) => {
       {/* Left Side: Marketing and Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center px-10 bg-cyan-600 text-white shadow-xl">
         <h1 className="text-6xl font-extrabold drop-shadow-lg mb-8 tracking-wide">
-          PhysioBuddy
+          Rehab AI
         </h1>
         {/* Placeholder for Doctor Animation GIF */}
         <img 
@@ -123,7 +123,7 @@ const handleSubmit = async (e) => {
             <div className="flex justify-center mb-6">
               <img 
                 src={pb} 
-                alt="PhysioBuddy Logo" 
+                alt="Rehab AI Logo" 
                 className="w-48 h-auto"
                  // Added onError to provide a fallback if the primary placeholder fails
                 onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/300x80/0e7490/ffffff?text=PB"; }}
