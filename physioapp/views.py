@@ -1,0 +1,481 @@
+import json
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.http import JsonResponse, Http404
+from django.shortcuts import get_object_or_404
+from .models import PatientProfile, DoctorProfile, AssignedExercise, Exercise, Message
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+
+User = get_user_model()
+
+# Common API
+def login_api(request):
+    if request.method == 'POST':
+            # Get the data from JSON body
+            try:
+                data = json.loads(request.body)
+                email = data.get('email')
+                password = data.get('password')
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            
+            logout(request)
+
+            if not email or not password:
+                return JsonResponse({'error': 'Email and password are required'}, status=400)
+
+            try:
+                user_obj = User.objects.get(email__iexact=email)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Invalid email or password'}, status=404)
+
+            user = authenticate(request, username=user_obj.username, password=password)
+            if user is not None:
+                login(request, user)
+
+                if user.is_staff:
+                    return JsonResponse({'user': 'doctor'}, status=200)
+                else:
+                    return JsonResponse({'user': 'patient'}, status=200)
+            else:
+                return JsonResponse({'error': 'Invalid email or password'}, status=404)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+def logout_api(request):
+    if request.method == 'POST':
+        logout(request)
+        return JsonResponse({'message': 'Logged out successfully'}, status=200)
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
+# APIs for Doctors
+
+def doctor_home_api(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    try:
+        curr_doc = DoctorProfile.objects.get(user=request.user)
+    except DoctorProfile.DoesNotExist:
+        return JsonResponse({'error': 'Doctor profile not found'}, status=404)
+
+    patients = PatientProfile.objects.filter(doctor=curr_doc).prefetch_related('assigned_exercises')
+    total_patients = patients.count()
+    completed_patients = 0
+    not_completed_patients = 0
+    today = timezone.now().date()
+
+    for patient in patients:
+        assignments = patient.assigned_exercises.filter(
+            assigned_by=curr_doc,
+            date_assigned__date=today,
+        )
+        if not assignments.exists():
+            continue
+
+        if all(a.is_completed for a in assignments):
+            completed_patients += 1
+        else:
+            not_completed_patients += 1
+
+    return JsonResponse({
+        'total_patients': total_patients,
+        'completed_patients': completed_patients,
+        'not_completed_patients': not_completed_patients,
+    }, status=200)
+
+def doctor_profile_api(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"error": "Authentication required"},
+            status=401
+        )
+
+    try:
+        # 2. Fetch doctor profile for the logged-in user
+        doctor = get_object_or_404(DoctorProfile, user=request.user)
+
+        # 3. Build response
+        doctor_details = {
+            "doctor_name": doctor.user.username,
+            "phone_number": doctor.phone_number,
+            "email": doctor.user.email,
+            "specialization": doctor.speciality,
+            "qualification": doctor.qualification,
+            "gender": doctor.gender,
+            "city": doctor.city,
+            "hospital_name": doctor.hospital_name,
+            "experience_years": doctor.experience_years,
+            "professional_summary": doctor.professional_summary,
+            "doctor_image": doctor.image_base64
+
+        }
+        return JsonResponse(doctor_details, status=200)
+
+    except Http404:
+        return JsonResponse(
+            {"error": "Doctor profile not found"},
+            status=404
+        )
+
+@csrf_exempt 
+def update_doctor_image(request):
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not logged in'}, status=401)
+            
+        try:
+            # Parse the incoming JSON from React
+            data = json.loads(request.body)
+            base64_string = data.get('doctor_image')
+
+            # Find the doctor and update the field
+            doctor = get_object_or_404(DoctorProfile, user=request.user)
+            doctor.image_base64 = base64_string
+            doctor.save()
+
+            return JsonResponse({'success': 'Image updated successfully'}, status=200)
+            
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+def get_patient_status(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    try:
+        curr_doc = DoctorProfile.objects.get(user = request.user)
+    except DoctorProfile.DoesNotExist:
+        return JsonResponse({'message':"Can't find the doctor!!!"})
+    else:
+        patients = PatientProfile.objects.filter(doctor=curr_doc)
+        patient_data_list = []
+        for patient in patients:        
+            patient_data = {}
+            patient_data['name']=patient.user.username
+            exe_list = []
+            assigned_exercises = AssignedExercise.objects.filter(
+                                                                    patient=patient, 
+                                                                    assigned_by=curr_doc,
+                                                                    date_assigned__date = timezone.now().date()
+                                                                )
+            for assigned_exercise in assigned_exercises:
+                exe_list.append(
+                                {
+                                    'exercise_name':assigned_exercise.exercise.name, 
+                                    'reps': assigned_exercise.target_reps, 
+                                    'is_completed':assigned_exercise.is_completed
+                                }
+                                )
+            patient_data['assigned_exercises'] = exe_list
+            if exe_list:
+                patient_data_list.append(patient_data)
+    return JsonResponse(patient_data_list, safe=False)
+
+@csrf_exempt
+def my_patients(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+    try:
+        curr_doc = DoctorProfile.objects.get(user = request.user)
+        
+    except DoctorProfile.DoesNotExist:
+        return JsonResponse({'message':"Can't find the doctor!!!"})
+    else:
+        patients = PatientProfile.objects.filter(doctor=curr_doc)
+        exercises = Exercise.objects.all()
+       
+        patient_data_list = []
+        for patient in patients:
+            patient_data_list.append(patient.user.username)
+        
+        exercise_list = []
+        for exercise in exercises:
+            exercise_list.append(exercise.name)
+
+        # Return combined response
+        return JsonResponse({
+            'patients': patient_data_list,
+            'exercises': exercise_list
+        })
+
+@csrf_exempt
+def submit_assignment(request):
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        try:
+            data = json.loads(request.body)
+            patient_name = data.get('patient_name')
+            exercise_name = data.get('exercise_name')
+            rep_count = data.get('repetitions')
+            
+            if not all([patient_name, exercise_name, rep_count]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        
+        try:
+            # Creating respective objects
+            patient_obj = PatientProfile.objects.get(user__username=patient_name)
+            doctor_obj = DoctorProfile.objects.get(user=request.user)  # Use authenticated user
+            exercise_obj = Exercise.objects.get(name=exercise_name)
+
+        except PatientProfile.DoesNotExist:
+            return JsonResponse({'error': 'Patient doesn\'t exist'}, status=404)
+        except Exercise.DoesNotExist:
+            return JsonResponse({'error': 'Exercise doesn\'t exist'}, status=404)
+        except DoctorProfile.DoesNotExist:
+            return JsonResponse({'error': 'Doctor profile not found'}, status=404)
+        
+        # Creating AssignedExercise Object
+        assignment = AssignedExercise(patient=patient_obj, assigned_by=doctor_obj, exercise=exercise_obj, target_reps=rep_count)
+        assignment.save()
+        return JsonResponse({'message': 'Assignment created successfully'})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
+
+
+
+
+# APIs for Patients
+def patient_profile_api(request):
+    try:
+        patient = get_object_or_404(PatientProfile, user=request.user)
+    except Http404:
+        return JsonResponse({'error': 'Patient profile not found'}, status=404)
+    
+
+    patient_details = {
+                'patient_name': patient.user.username, 
+                'phone_number': patient.phone_number, 
+                'email': patient.user.email, 
+                'dob': patient.date_of_birth, 
+                'gender': patient.gender,
+                'assigned_doctor': patient.doctor.user.username,
+                'height' : patient.height, 
+                'weight' : patient.weight, 
+                'bg' : patient.blood_group, 
+                #'patient_image': request.build_absolute_uri(patient.image.url) if patient.image else None
+                'patient_image' : patient.image_base64
+            }        
+    return JsonResponse(patient_details, status=200)
+
+def get_exercise_list(request):
+    # Check if the user is patient
+    if  request.user.is_staff:
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+    try:
+        Patientobj = get_object_or_404(PatientProfile, user=request.user)
+    except Http404:
+        return JsonResponse({'error': 'Patient profile not found.'}, status=404)
+    #today = timezone.now().date()
+    assignments = AssignedExercise.objects.filter(
+        patient=Patientobj,
+        date_assigned__date = timezone.now().date()
+       
+    ).select_related('exercise')
+    
+    assignments_list = []
+    for assignment in assignments:
+        assignments_list.append({
+            'patient_username': assignment.patient.user.username,
+            'exercise_id': assignment.exercise.id,
+            'assignment_id': assignment.id,
+            'exercise_name': assignment.exercise.name,
+            'exercise_video_url': assignment.exercise.demo_video_url,
+            'target_reps': assignment.target_reps,
+            'is_completed': assignment.is_completed,
+            'date_assigned': assignment.date_assigned.isoformat() # Convert DateTimeField to string
+        })
+
+    # Return the list as a JsonResponse
+    return JsonResponse(assignments_list, safe=False, status=200)
+
+@csrf_exempt 
+def update_patient_image(request):
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Not logged in'}, status=401)
+            
+        try:
+            # Parse the incoming JSON from React
+            data = json.loads(request.body)
+            base64_string = data.get('patient_image')
+
+            # Find the patient and update the field
+            patient = get_object_or_404(PatientProfile, user=request.user)
+            patient.image_base64 = base64_string
+            patient.save()
+
+            return JsonResponse({'success': 'Image updated successfully'}, status=200)
+            
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+def get_doctor_name(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    try:
+        doctor = get_object_or_404(DoctorProfile, user=request.user)
+        doctor_name = doctor.user.username
+        return JsonResponse({'doctor_name': doctor_name}, status=200)
+    except Http404:
+        return JsonResponse({'error': 'Doctor profile not found'}, status=404)
+
+
+def update_completion_status(request):
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        try:
+            data = json.loads(request.body)
+            assignment_id = data.get('assignment_id')
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        
+        try:
+            assignment = AssignedExercise.objects.get(
+                                                        id=assignment_id,
+                                                    )
+        except AssignedExercise.DoesNotExist:
+            return JsonResponse({'error': 'Assignment not found'}, status=404)
+        
+        assignment.is_completed = True
+        assignment.save()
+        
+        return JsonResponse({'message': 'Completion status updated successfully'})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@csrf_exempt
+def send_message_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    try:
+        patient = PatientProfile.objects.get(user=request.user)
+    except PatientProfile.DoesNotExist:
+        return JsonResponse({'error': 'Only patients can send messages'}, status=403)
+    
+    if not patient.doctor:
+        return JsonResponse({'error': 'No therapist is currently assigned to your profile.'}, status=400)
+        
+    try:
+        data = json.loads(request.body)
+        subject = data.get('subject')
+        message_text = data.get('message')
+        if not subject or not message_text:
+            return JsonResponse({'error': 'Subject and message are required.'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        
+    content = f"[{subject}] {message_text}"
+    msg = Message.objects.create(
+        patient=patient,
+        doctor=patient.doctor,
+        content=content
+    )
+    return JsonResponse({'message': 'Message sent successfully', 'id': msg.id}, status=200)
+
+
+def get_patient_messages_api(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    try:
+        patient = PatientProfile.objects.get(user=request.user)
+    except PatientProfile.DoesNotExist:
+        return JsonResponse({'error': 'Only patients can view these messages'}, status=403)
+    
+    today = timezone.now().date()
+    messages = Message.objects.filter(patient=patient, created_at__date=today).order_by('created_at')
+    msg_list = []
+    for msg in messages:
+        msg_list.append({
+            'id': msg.id,
+            'content': msg.content,
+            'is_read': msg.is_read,
+            'created_at': msg.created_at.isoformat(),
+        })
+    return JsonResponse(msg_list, safe=False, status=200)
+
+
+def get_doctor_messages_api(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    try:
+        doctor = DoctorProfile.objects.get(user=request.user)
+    except DoctorProfile.DoesNotExist:
+        return JsonResponse({'error': 'Only doctors can view these messages'}, status=403)
+    
+    today = timezone.now().date()
+    messages = Message.objects.filter(doctor=doctor, created_at__date=today).order_by('-created_at')
+    msg_list = []
+    for msg in messages:
+        msg_list.append({
+            'id': msg.id,
+            'patient_name': msg.patient.user.username,
+            'content': msg.content,
+            'is_read': msg.is_read,
+            'created_at': msg.created_at.isoformat(),
+        })
+    return JsonResponse(msg_list, safe=False, status=200)
+
+
+@csrf_exempt
+def mark_message_read_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    try:
+        doctor = DoctorProfile.objects.get(user=request.user)
+    except DoctorProfile.DoesNotExist:
+        return JsonResponse({'error': 'Only doctors can perform this action'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        message_id = data.get('message_id')
+        msg = get_object_or_404(Message, id=message_id, doctor=doctor)
+        msg.is_read = True
+        msg.save()
+        return JsonResponse({'message': 'Message marked as read'}, status=200)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+
+def check_exercise_compliance(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    today = timezone.now().date()
+    # Find all exercises assigned to this patient for today that are not done
+    pending = AssignedExercise.objects.filter(
+        patient__user_id=request.user.id,
+        date_assigned__date=today,
+        is_completed=False
+    )
+
+    has_pending = pending.exists()
+
+    return JsonResponse({
+        'skipped': has_pending,
+        'message': "You have pending exercises for today!" if has_pending else None
+    })
