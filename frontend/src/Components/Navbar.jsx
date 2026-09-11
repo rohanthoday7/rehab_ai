@@ -48,7 +48,7 @@ export default function Navbar({ role }) {
         
         {/* Logo */}
         <Link to={role === 'doctor' ? '/doctor-home' : '/patient-home'} className="flex-shrink-0">
-          <img src={pb} alt="PhysioBuddy" className="h-10 sm:h-12 w-auto" />
+          <img src={pb} alt="Rehab AI" className="h-10 sm:h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
